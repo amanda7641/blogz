@@ -4,7 +4,7 @@
 <h2>Login</h2>
 <a href="/signup">Create an account</a>
 <form action="/login" method="post">
-  <p><label>Email<input type="text" name="username"/></label></p>
+  <p><label>Username<input type="text" name="username" value='{{username}}'/></label></p>
   <p class=error>{{username_error}}</p>
   <p><label>Password<input type="password" name="password"/></label></p>
   <p class=error>{{password_error}}</p>

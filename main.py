@@ -20,15 +20,17 @@ class Blog(db.Model):
     def __init__(self, title, blog_body, owner):
         self.title = title
         self.blog_body = blog_body
-        self.owner_id = owner.id
+        self.owner = owner
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120))
     username = db.Column(db.String(120))
     password = db.Column(db.String(120))
     blogs = db.relationship('Blog', backref='owner')
 
-    def __init__(self, username, password):
+    def __init__(self, email, username, password):
+        self.email = email
         self.username = username
         self.password = password
 
@@ -52,41 +54,45 @@ def login():
                 password_error = 'Password is incorrect.'
         else:
             username_error = 'This username does not exist.'
-    return render_template('login.html', password_error=password_error, username_error=username_error)
+    return render_template('login.html', username=username, password_error=password_error, username_error=username_error)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    email = ''
+    email_error = ''
+    password_error = ''
+    verify_error = ''
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
         verify = request.form['verify']
         username_error = ''
         password_error = ''
         verify_error = ''
-#TODO take away flashes and add errors to be input instead.
+        email_db_count = User.query.filter_by(email=email).count()
 
-        if not is_email(username):
-            flash('zoiks! "' + username + '" does not seem like an email address')
-            return redirect('/register')
-        email_db_count = User.query.filter_by(username=username).count()
-        if email_db_count > 0:
-            flash('yikes! "' + username + '" is already taken and password reminders are not implemented')
-            return redirect('/register')
-        if password != verify:
-            flash('passwords did not match')
-            return redirect('/register')
+
+        if not is_email(email):
+            email_error = 'Zoiks! "' + email + '" does not seem like an email address.'
+        elif email_db_count > 0:
+            email_error = 'Yikes! "' + email + '" is already taken and password reminders are not implemented.'
+        elif len(email) < 3:
+            email_error = 'Password must be at least 3 characters.'
         if not password:
-            flash('you must enter a password.')
-            return redirect('/register')
-        if len(password) < 3 or len(username) < 3:
-            flash('Username and password must be ')
-        user = User(username=username, password=password)
-        db.session.add(user)
-        db.session.commit()
-        session['user'] = user.username
-        return redirect("/")
-    else:
-        return render_template('signup.html')
+            password_error = 'You must enter a password.'
+        elif len(password) < 3:
+            password_error = 'Password my be at least 3 characters.'
+        elif password != verify:
+            verify_error = 'Passwords did not match.'
+        if not email_error and not password_error and not verify_error:
+            end = int(email.find('@'))
+            username = email[0:end]
+            user = User(email=email, username=username, password=password)
+            db.session.add(user)
+            db.session.commit()
+            session['username'] = user.username
+            return redirect("/newpost")
+    return render_template('signup.html', email=email, email_error=email_error, password_error=password_error, verify_error=verify_error)
 
 def is_email(string):
     atsign_index = string.find('@')
@@ -98,9 +104,10 @@ def is_email(string):
         domain_dot_present = domain_dot_index >= 0
         return domain_dot_present
 
-@app.route('/index')
+@app.route('/')
 def index():
-    return render_template('index.html')
+    users = User.query.all()
+    return render_template('index.html', title = 'Home', users=users)
 
 @app.route("/logout", methods=['POST'])
 def logout():
@@ -113,19 +120,23 @@ def blog():
         id = request.args.get('id')
         blog = Blog.query.get(id)
         return render_template('view_post.html', blog=blog)
-
-    blogs = Blog.query.all()
+    if request.args.get('user'):
+        user_id = request.args.get('user')
+        owner = User.query.get(user_id)
+        blogs = Blog.query.filter_by(owner=owner)
+        return render_template('singleUser.html', title="Blog Posts", blogs=blogs)
+    blogs = Blog.query.all()    
     return render_template('blog.html', title="Build A Blog", blogs=blogs)
 
 endpoints_without_login = ['login', 'signup', 'blog', 'view', 'index']
 
 @app.before_request
 def require_login():
-    if not ('user' in session or request.endpoint in endpoints_without_login):
-        return redirect("/register")
+    if not ('username' in session or request.endpoint in endpoints_without_login):
+        return redirect("/login")
 
-@app.route('/newpost', methods=['POST'])
-def add():    
+@app.route('/newpost', methods=['GET', 'POST'])
+def newpost():    
     if request.method == 'POST':
         blog_title = request.form['title']
         blog_body = request.form['blog_body']
@@ -147,13 +158,9 @@ def add():
             id = str(new_blog.id)
             return redirect("/view?id=" + id)
         
-        else:
-            return render_template('add_post.html', title="Add A Post",
-                title_error=title_error, body_error=body_error, 
-                blog_title=blog_title, blog_body=blog_body)
-
-@app.route('/newpost')
-def add_home():
+        return render_template('add_post.html', title="Add A Post", 
+        title_error=title_error, body_error=body_error, 
+        blog_title=blog_title, blog_body=blog_body)
     return render_template('add_post.html', title="Add A Post")
 
 @app.route('/view')
@@ -161,10 +168,6 @@ def view():
     id = request.args.get('id')
     blog = Blog.query.get(id)
     return render_template('view_post.html', blog=blog)
-
-@app.route('/')
-def home():
-    return render_template('home.html', title="Welcome!")
 
 if __name__ == '__main__':    
     app.run()

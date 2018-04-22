@@ -4,4 +4,5 @@
     <h1>Build A Blog Post</h1>
     <h3>{{blog.title}}</h3>
     <p>{{blog.blog_body}}</p>
+    <p>written by <a href='/blog?user={{blog.owner.id}}'>{{blog.owner.username}}</a></p>
 {% endblock %}

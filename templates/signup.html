@@ -3,12 +3,12 @@
 
 <h2>Signup</h2>
 <form action="/signup" method="post">
-  <p><label>Email <input type="text" name="username"/></label></p>
-  <p class=error>{{username_error}}</p>
+  <p><label>Email <input type="text" name="email" value='{{email}}'/></label></p>
+  <p class=error>{{email_error}}</p>
   <p><label>New Password <input type="password" name="password"/></label></p>
   <p class=error>{{password_error}}</p>
   <p><label>Verify Password <input type="password" name="verify"/></label></p>
-  <p class=error>{{verify}_error}}</p>
+  <p class=error>{{verify_error}}</p>
   <p><input type="submit" value="Signup"/></p>
 </form>
 

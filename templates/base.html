@@ -11,13 +11,13 @@
     <body>
         <a href="/blog">Main Blog Page</a> | <a href="/newpost">Add a Blog Entry</a>
         <div style='float: right'>
-            {% if 'user' in session %}
-              {{ session['user'] }}
+            {% if 'username' in session %}
+              {{ session['username'] }}
               <form action="/logout" method="post" id='logout'>
                 <input type="submit" value="Log Out" />
               </form>
             {% else %}
-            <a href="/index">Home</a> | <a href="/login">Login</a> | <a href="/signup">Create Account</a>
+            <a href="/">Home</a> | <a href="/login">Login</a> | <a href="/signup">Create Account</a>
             {% endif %}
         </div>
         {% block content %}
